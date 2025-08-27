@@ -93,13 +93,7 @@ class _UserAuthState extends State<UserAuth> {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        int userId = data["user_id"];
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => UserDetail(userId: userId),
-          ),
-        );
+        print('data added suxessfully : $data');
       } else {
         final error = jsonDecode(response.body);
         _showError(error.toString());
