@@ -75,8 +75,11 @@ class _UserAuthState extends State<UserAuth> {
         emailController.text.trim(),
         passwordController.text.trim(),
       );
+
+
     }
   }
+
 
   Future<void> sendData(String username, String email, String password) async {
     try {
@@ -93,6 +96,21 @@ class _UserAuthState extends State<UserAuth> {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        // int userId = data["user_id"];
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => UserDetail(userId: userId),
+        //   ),
+        // );
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VerifyOtp(email: email),
+          ),
+        );
+
+
         print('data added suxessfully : $data');
       } else {
         final error = jsonDecode(response.body);
@@ -297,3 +315,105 @@ class _UserDetailState extends State<UserDetail> {
   }
 }
 
+
+class VerifyOtp extends StatefulWidget {
+  final String email;
+  const VerifyOtp({super.key, required this.email});
+
+  @override
+  State<VerifyOtp> createState() => _VerifyOtpState();
+}
+
+class _VerifyOtpState extends State<VerifyOtp> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController otpController = TextEditingController();
+
+  void submitForm() {
+    if (_formKey.currentState!.validate()) {
+      sendData(otpController.text.trim());
+    }
+  }
+
+  Future<void> sendData(String otp) async {
+    try {
+      final url = Uri.parse("http://192.168.56.1:8000/verify-otp/");
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": widget.email,
+          "otp": otp,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        int userId = data["user_id"];
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserDetail(userId: userId),
+          ),
+        );
+
+        print('OTP verified successfully: $data');
+      } else {
+        final error = jsonDecode(response.body);
+        _showError(error.toString());
+      }
+    } catch (e) {
+      _showError("Network Error: $e");
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Material( // <- Add this
+      child: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Email: ${widget.email}',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  SizedBox(height: 20),
+                  TextFormField(
+                    controller: otpController,
+                    keyboardType: TextInputType.text,
+                    maxLength: 6,
+                    decoration: InputDecoration(
+                      labelText: 'Enter OTP',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter OTP';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: submitForm,
+                    child: Text('Verify'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  } }
