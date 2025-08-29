@@ -75,11 +75,8 @@ class _UserAuthState extends State<UserAuth> {
         emailController.text.trim(),
         passwordController.text.trim(),
       );
-
-
     }
   }
-
 
   Future<void> sendData(String username, String email, String password) async {
     try {
@@ -110,7 +107,6 @@ class _UserAuthState extends State<UserAuth> {
           ),
         );
 
-
         print('data added suxessfully : $data');
       } else {
         final error = jsonDecode(response.body);
@@ -137,21 +133,21 @@ class _UserAuthState extends State<UserAuth> {
             controller: usernameController,
             decoration: const InputDecoration(labelText: "Username"),
             validator: (value) =>
-            value == null || value.isEmpty ? "Username required" : null,
+                value == null || value.isEmpty ? "Username required" : null,
           ),
           TextFormField(
             controller: emailController,
             decoration: const InputDecoration(labelText: "Email"),
             keyboardType: TextInputType.emailAddress,
             validator: (value) =>
-            value == null || value.isEmpty ? "Email required" : null,
+                value == null || value.isEmpty ? "Email required" : null,
           ),
           TextFormField(
             controller: passwordController,
             decoration: const InputDecoration(labelText: "Password"),
             obscureText: true,
             validator: (value) =>
-            value == null || value.isEmpty ? "Password required" : null,
+                value == null || value.isEmpty ? "Password required" : null,
           ),
           const SizedBox(height: 20),
           ElevatedButton(onPressed: submitForm, child: const Text("Submit")),
@@ -198,7 +194,7 @@ class _UserDetailState extends State<UserDetail> {
 
     if (picked != null) {
       dateOfBirthController.text =
-      "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+          "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
     }
   }
 
@@ -215,8 +211,8 @@ class _UserDetailState extends State<UserDetail> {
     }
   }
 
-  Future<void> sendData(
-      String firstName, String lastName, String dob, String phone, File? image) async {
+  Future<void> sendData(String firstName, String lastName, String dob,
+      String phone, File? image) async {
     print("Sending data:");
     print("User  ID: ${widget.userId}");
     print("First Name: $firstName");
@@ -224,8 +220,8 @@ class _UserDetailState extends State<UserDetail> {
     print("Date of Birth: $dob");
     print("Phone: $phone");
     print("Image: ${image?.path}");
-    final url = Uri.parse("http://192.168.56.1:8000/users/${widget.userId}/profile/");
-
+    final url =
+        Uri.parse("http://192.168.56.1:8000/users/${widget.userId}/profile/");
 
     var request = http.MultipartRequest("POST", url);
     request.fields["first_name"] = firstName;
@@ -234,13 +230,31 @@ class _UserDetailState extends State<UserDetail> {
     request.fields["phone"] = phone;
 
     if (image != null) {
-      request.files.add(await http.MultipartFile.fromPath("profile_pic", image.path));
+      request.files
+          .add(await http.MultipartFile.fromPath("profile_pic", image.path));
     }
 
     var response = await request.send();
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       var responseData = await response.stream.bytesToString();
+      final data = jsonDecode(responseData);
+      String username = data["username"];
+      String firstName = data["first_name"];
+      String lastName = data["last_name"];
+      String profile_pic = data["profile_pic"];
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Dashboard(
+            username: username,
+            first_name: firstName,
+            last_name: lastName,
+            profile_pic: profile_pic,
+          ),
+        ),
+      );
       print("✅ Profile submitted: $responseData");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Profile submitted successfully!")),
@@ -290,7 +304,7 @@ class _UserDetailState extends State<UserDetail> {
                 decoration: const InputDecoration(labelText: "Date of Birth"),
                 onTap: pickDate,
                 validator: (value) =>
-                value == null || value.trim().isEmpty ? "Required" : null,
+                    value == null || value.trim().isEmpty ? "Required" : null,
               ),
               TextFormField(
                 controller: phoneNumberController,
@@ -303,10 +317,14 @@ class _UserDetailState extends State<UserDetail> {
                 },
               ),
               const SizedBox(height: 20),
-              _image != null ? Image.file(_image!, height: 120) : const Text("No image selected"),
-              ElevatedButton(onPressed: pickImage, child: const Text("Pick Image")),
+              _image != null
+                  ? Image.file(_image!, height: 120)
+                  : const Text("No image selected"),
+              ElevatedButton(
+                  onPressed: pickImage, child: const Text("Pick Image")),
               const SizedBox(height: 20),
-              ElevatedButton(onPressed: submitForm, child: const Text("Submit")),
+              ElevatedButton(
+                  onPressed: submitForm, child: const Text("Submit")),
             ],
           ),
         ),
@@ -314,7 +332,6 @@ class _UserDetailState extends State<UserDetail> {
     );
   }
 }
-
 
 class VerifyOtp extends StatefulWidget {
   final String email;
@@ -372,9 +389,11 @@ class _VerifyOtpState extends State<VerifyOtp> {
       SnackBar(content: Text(message)),
     );
   }
+
   @override
   Widget build(BuildContext context) {
-    return Material( // <- Add this
+    return Material(
+      // <- Add this
       child: Center(
         child: SingleChildScrollView(
           child: Padding(
@@ -416,4 +435,54 @@ class _VerifyOtpState extends State<VerifyOtp> {
         ),
       ),
     );
-  } }
+  }
+}
+
+class Dashboard extends StatefulWidget {
+  final String username;
+  final String first_name;
+  final String last_name;
+  final String? profile_pic;
+
+  const Dashboard(
+      {super.key,
+      required this.username,
+      required this.first_name,
+      required this.last_name,
+      required this.profile_pic});
+
+  @override
+  State<Dashboard> createState() => _DashboardState();
+}
+
+class _DashboardState extends State<Dashboard> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Dashboard")),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Username: ${widget.username}"),
+            Text("First Name: ${widget.first_name}"),
+            Text("Last Name: ${widget.last_name}"),
+            CircleAvatar(
+              radius: 50,
+              backgroundImage: (widget.profile_pic != null && widget.profile_pic!.isNotEmpty)
+                  ? NetworkImage(widget.profile_pic!)  // ✅ ImageProvider
+                  : null,  // no background image
+              child: (widget.profile_pic == null || widget.profile_pic!.isEmpty)
+                  ? const Icon(Icons.person, size: 50)  // placeholder if no image
+                  : null,
+              onBackgroundImageError: (_, __) => const Icon(Icons.error),
+            )
+
+
+          ],
+        ),
+      ),
+    );
+  }
+}
